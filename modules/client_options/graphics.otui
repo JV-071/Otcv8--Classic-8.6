@@ -16,23 +16,54 @@ OptionPanel
     visible: false
     margin: 5 5 5 5
 
-  OptionCheckBox
-    id: vsync
-    !text: tr('Enable VSync')
-    !tooltip: tr('Limits FPS (usually to 60)')
+  FlatPanel
+    height: 22
 
-  OptionCheckBox
-    id: showFps
-    !text: tr('Show FPS')
+    OptionCheckBox
+      id: vsync
+      !text: tr('Enable VSync')
+      !tooltip: tr('Limits FPS (usually to 60)')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  OptionCheckBox
-    id: fullscreen
-    !text: tr('Fullscreen')
-    tooltip: Ctrl+Shift+F
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-  OptionCheckBox
-    id: antialiasing
-    !text: tr('Antialiasing')
+    OptionCheckBox
+      id: fullscreen
+      !text: tr('Fullscreen')
+      tooltip: Ctrl+Shift+F
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
+
+  FlatPanel
+    height: 22
+    margin-top: 8
+
+    OptionCheckBox
+      id: dontStretchShrink
+      !text: tr('Don\'t Stretch/Shrink Game Window')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
+
+  FlatPanel
+    height: 22
+    margin-top: 8
+
+    OptionCheckBox
+      id: antialiasing
+      !text: tr('Antialiasing')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
   Label
     margin-top: 12
@@ -54,11 +85,6 @@ OptionPanel
       self:addOption("Medium")
       self:addOption("High")
       self:addOption("Maximum")
-      
-  Label
-    !text: tr('High/Maximum optimization level may cause visual defects.')
-    margin-top: 5
-    visible: false
 
   Label
     id: backgroundFrameRateLabel
@@ -83,10 +109,86 @@ OptionPanel
     margin-top: 6
     @onSetup: |
       local value = modules.client_options.getOption('ambientLight')
-      self:setText(tr('Ambient light: %s%%', value))
+      self:setText(tr('Ambient light: %s%%', value * 2))
 
   OptionScrollbar
     id: ambientLight
     margin-top: 3
     minimum: 0
+    maximum: 50
+
+  Label
+    margin-top: 12
+    id: optimizationLevelLabel
+    !text: tr("Optimization level")
+    
+  ComboBox
+    id: optimizationLevel
+    margin-top: 3
+    margin-right: 2
+    margin-left: 2
+    @onOptionChange: modules.client_options.setOption(self:getId(), self.currentIndex)
+    @onSetup: |
+      self:addOption("Automatic")
+      self:addOption("None")
+      self:addOption("Low")
+      self:addOption("Medium")
+      self:addOption("High")
+      self:addOption("Maximum")
+
+  OptionCheckBox
+    id: classicView
+    !text: tr('Classic view')
+    margin-top: 5
+    visible: false
+    
+    $mobile:
+      visible: false
+
+  OptionCheckBox
+    id: cacheMap
+    visible: false
+    !text: tr('Cache map (for non-classic view)')
+
+    $mobile:
+      visible: false
+      
+  FlatPanel
+    margin-top: 8
+    height: 22
+
+    OptionCheckBox
+      id: enableAudio
+      !text: tr('Enable audio')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
+
+  FlatPanel
+    height: 22
+    margin-top: 8
+
+    OptionCheckBox
+      id: enableMusicSound
+      !text: tr('Enable music sound')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
+
+  Label
+    id: musicSoundVolumeLabel
+    !text: tr('Music volume: %d', 100)
+    margin-top: 6
+    @onSetup: |
+      local value = modules.client_options.getOption('musicSoundVolume')
+      self:setText(tr('Music volume: %d', value))
+
+  OptionScrollbar
+    id: musicSoundVolume
+    margin-top: 3
+    minimum: 0
     maximum: 100
+
+

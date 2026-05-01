@@ -1,45 +1,21 @@
 local defaultOptions = {
-	showTooltips = false,
-	turnDelay = 30,
+	leftPanels = 0,
+	classicView = true,
 	dontStretchShrink = false,
-	displayText = true,
-	topHealtManaBar = false,
-	highlightThingsUnderCursor = false,
-	hidePlayerBars = true,
 	fullscreen = false,
 	showPing = true,
 	showFps = true,
 	vsync = true,
-	displayNames = true,
-	ambientLight = 0,
-	crosshair = 1,
-	floorFading = 500,
 	botSoundVolume = 0,
-	musicSoundVolume = 0,
-	enableMusicSound = false,
-	enableAudio = false,
-	backgroundFrameRate = 60,
-	containerPanel = 8,
-	leftPanels = 0,
-	rightPanels = 1,
-	showPrivateMessagesOnScreen = true,
-	showPrivateMessagesInConsole = true,
-	showLevelsInConsole = true,
-	showTimestampsInConsole = true,
-	showInfoMessagesInConsole = true,
-	showEventMessagesInConsole = true,
-	showStatusMessagesInConsole = true,
-	autoChaseOverride = true,
-	smoothWalking = false,
-	dash = false,
-	smartWalk = false,
-	showHealthManaCircle = false,
-	displayHealthOnTop = false,
-	classicView = true,
-	displayMana = true,
-	displayHealth = true,
-	hotkeyDelay = 30,
+	floorFading = 100,
+	crosshair = 1,
+	ambientLight = 50,
 	optimizationLevel = 1,
+	musicSoundVolume = 0,
+	displayHealth = true,
+	displayMana = false,
+	displayHealthOnTop = false,
+	showHealthManaCircle = false,
 	antialiasing = true,
 	profile = 1,
 	actionbarLock = false,
@@ -54,80 +30,88 @@ local defaultOptions = {
 	actionbar1 = false,
 	topBar = false,
 	walkCtrlTurnDelay = 150,
-	walkTeleportDelay = 200,
+	walkTeleportDelay = 50,
 	walkStairsDelay = 50,
 	walkTurnDelay = 100,
-	walkFirstStepDelay = 200,
-	moveFullStack = true,
+	walkFirstStepDelay = 100,
+	moveFullStack = false,
 	wsadWalking = false,
+	hotkeyDelay = 30,
+	turnDelay = 100,
+	displayText = true,
+	topHealtManaBar = false,
+	hidePlayerBars = true,
+	enableMusicSound = false,
+	enableAudio = true,
+	backgroundFrameRate = 60,
+	containerPanel = 8,
+	displayNames = true,
+	rightPanels = 1,
+	showPrivateMessagesOnScreen = true,
+	showPrivateMessagesInConsole = true,
+	showLevelsInConsole = true,
+	showTimestampsInConsole = true,
+	showInfoMessagesInConsole = true,
+	showEventMessagesInConsole = true,
+	showStatusMessagesInConsole = true,
+	autoChaseOverride = true,
+	dash = false,
+	smartWalk = false,
 	layout = DEFAULT_LAYOUT,
 	cacheMap = g_app.isMobile(),
 	classicControl = not g_app.isMobile()
 }
 optionsWindow = nil
 optionsButton = nil
-optionsTabBar = nil
 options = {}
 extraOptions = {}
-generalPanel = nil
-generalTab = nil
-interfacePanel = nil
-interfaceTab = nil
-consolePanel = nil
-consoleTab = nil
-graphicsPanel = nil
-graphicsTab = nil
-helpPanel = nil
-helpTab = nil
-hotkeyPanel = nil
-hotkeyTab = nil
-customPanel = nil
-extrasPanel = nil
-audioButton = nil
-local helpCategories = {
-	{
-		name = "Emotes",
-		text = ""
-	},
-	{
-		name = "Colored Text",
-		text = [[
-You can choose from a wide range of color options, including hexadecimal values or predefined color names.
+subWindows = {}
 
-To color your text using BBCode, simply use the following format:
+local function createSubWindow(id, title, uiName, size)
+	local window = g_ui.createWidget("MainWindow", rootWidget)
 
-- Hexadecimal Color Code: [color=#FF0000]Text[/color]
+	window:setId(id)
+	window:setText(title)
+	window:setSize(size or {
+		width = 350,
+		height = 400
+	})
+	window:setDraggable(false)
+	window:hide()
 
-]] .. [[
-Replace "#FF0000" with the desired hexadecimal color code.
+	if uiName then
+		local panel = g_ui.loadUI(uiName, window)
 
-- Predefined Color Name: [color=blue]Text[/color]
-
-Replace "blue" with the name of the color you wish to use.
-
-For example, if you want to color your text red, you can use either ]] .. [[
-of the following formats:
-
-- [color=#FF0000]Hello, adventurers![/color]
-
-- [color=red]Hello, adventurers![/color]
-
-]]
-	}
-}
-local emoticonString = "You have access to a variety of emoticons to enhance your communication with other players. Simply include the designated hashtag within your message to display the emoticon." .. "Here's a list of available emoticons and their corresponding hashtags:\n\n"
-
-for _, emoticon in pairs(dofile("/modules/game_console/emoticons.lua")) do
-	emoticonString = emoticonString .. emoticon.char .. " - "
-
-	for _, word in pairs(emoticon.words) do
-		emoticonString = emoticonString .. "#" .. word .. ", "
+		if panel then
+			panel:fill("parent")
+			panel:setMarginBottom(35)
+		end
 	end
 
-	emoticonString = emoticonString:sub(1, -3) .. "\n"
-end
+	local closeBtn = g_ui.createWidget("Button", window)
 
-helpCategories[1].text = emoticonString
+	closeBtn:setText("Ok")
+	closeBtn:setWidth(50)
+	closeBtn:addAnchor(AnchorBottom, "parent", AnchorBottom)
+	closeBtn:addAnchor(AnchorRight, "parent", AnchorRight)
+
+	function closeBtn.onClick()
+		window:hide()
+		show()
+	end
+
+	function window.onEscape()
+		window:hide()
+		show()
+	end
+
+	function window.onEnter()
+		window:hide()
+		show()
+	end
+
+	return window
+end
 
 function init()
 	for k, v in pairs(defaultOptions) do
@@ -144,50 +128,34 @@ function init()
 
 	optionsWindow = g_ui.displayUI("options")
 
+	optionsWindow:setDraggable(false)
 	optionsWindow:hide()
 
-	optionsTabBar = optionsWindow:getChildById("optionsTabBar")
+	function optionsWindow.onEnter()
+		hide()
+	end
 
-	optionsTabBar:setContentWidget(optionsWindow:getChildById("optionsTabContent"))
+	subWindows.general = createSubWindow("generalWindow", tr("General Options"), "game", {
+		width = 250,
+		height = 380
+	})
+	subWindows.graphics = createSubWindow("graphicsWindow", tr("Graphics"), "graphics", {
+		width = 270,
+		height = 440
+	})
+	subWindows.console = createSubWindow("consoleWindow", tr("Console"), "console", {
+		width = 320,
+		height = 280
+	})
+	subWindows.actionbars = createSubWindow("actionbarsWindow", tr("Actionbars"), "custom", {
+		width = 300,
+		height = 290
+	})
+
 	g_keyboard.bindKeyDown("Ctrl+Shift+F", function ()
 		toggleOption("fullscreen")
 	end)
 	g_keyboard.bindKeyDown("Ctrl+N", toggleDisplays)
-
-	generalPanel = g_ui.loadUI("game")
-	generalTab = optionsTabBar:addTab(tr("Game"), generalPanel)
-	interfacePanel = g_ui.loadUI("interface")
-	interfaceTab = optionsTabBar:addTab(tr("Interface"), interfacePanel)
-	consolePanel = g_ui.loadUI("console")
-	consoleTab = optionsTabBar:addTab(tr("Console"), consolePanel)
-	graphicsPanel = g_ui.loadUI("graphics")
-	graphicsTab = optionsTabBar:addTab(tr("Graphics"), graphicsPanel)
-	customPanel = g_ui.loadUI("custom")
-
-	optionsTabBar:addTab(tr("Actionbars"), customPanel)
-
-	helpPanel = g_ui.loadUI("help")
-	helpTab = optionsTabBar:addTab(tr("Help"), helpPanel)
-	helpCategoryComboBox = helpPanel:getChildById("categoryComboBox")
-	helpDescription = helpPanel:getChildById("helpDescription")
-
-	for _, category in pairs(helpCategories) do
-		helpCategoryComboBox:addOption(category.name)
-	end
-
-	extrasPanel = g_ui.createWidget("OptionPanel")
-
-	for _, v in ipairs(g_extras.getAll()) do
-		local extrasButton = g_ui.createWidget("OptionCheckBox")
-
-		extrasButton:setId(v)
-		extrasButton:setText(g_extras.getDescription(v))
-		extrasPanel:addChild(extrasButton)
-	end
-
-	if not g_game.getFeature(GameNoDebug) and not g_app.isMobile() then
-		-- Nothing
-	end
 
 	optionsButton = modules.client_topmenu.addLeftButton("optionsButton", tr("Options"), "/images/topbuttons/options", toggle)
 	audioButton = modules.client_topmenu.addLeftButton("audioButton", tr("Audio"), "/images/topbuttons/audio", function ()
@@ -217,6 +185,28 @@ function terminate()
 	optionsWindow:destroy()
 	optionsButton:destroy()
 	audioButton:destroy()
+
+	for _, win in pairs(subWindows) do
+		win:destroy()
+	end
+
+	subWindows = {}
+end
+
+function toggleSubWindow(name)
+	local win = subWindows[name]
+
+	if win then
+		if win:isVisible() then
+			win:hide()
+			show()
+		else
+			hide()
+			win:show()
+			win:raise()
+			win:focus()
+		end
+	end
 end
 
 function setup()
@@ -232,12 +222,6 @@ function setup()
 
 	for _, v in ipairs(g_extras.getAll()) do
 		g_extras.set(v, g_settings.getBoolean("extras_" .. v))
-
-		local widget = extrasPanel:recursiveGetChildById(v)
-
-		if widget then
-			widget:setChecked(g_extras.get(v))
-		end
 	end
 
 	if g_game.isOnline() then
@@ -315,18 +299,14 @@ function setOption(key, value, force)
 		g_window.setVerticalSync(value)
 	elseif key == "showFps" then
 		modules.client_topmenu.setFpsVisible(value)
-
-		if modules.game_stats and modules.game_stats.ui.fps then
-			modules.game_stats.ui.fps:setVisible(value)
-		end
 	elseif key == "showPing" then
 		modules.client_topmenu.setPingVisible(value)
-
-		if modules.game_stats and modules.game_stats.ui.ping then
-			modules.game_stats.ui.ping:setVisible(value)
-		end
 	elseif key == "fullscreen" then
 		g_window.setFullscreen(value)
+	elseif key == "dontStretchShrink" then
+		addEvent(function ()
+			modules.game_interface.updateStretchShrink()
+		end)
 	elseif key == "enableAudio" then
 		if g_sounds ~= nil then
 			g_sounds.setAudioEnabled(value)
@@ -337,6 +317,26 @@ function setOption(key, value, force)
 		else
 			audioButton:setIcon("/images/topbuttons/audio_mute")
 		end
+	elseif key == "enableMusicSound" then
+		if g_sounds ~= nil then
+			g_sounds.getChannel(SoundChannels.Music):setEnabled(value)
+		end
+	elseif key == "musicSoundVolume" then
+		if g_sounds ~= nil then
+			g_sounds.getChannel(SoundChannels.Music):setGain(value / 100)
+		end
+
+		for _, win in pairs(subWindows) do
+			local label = win:recursiveGetChildById("musicSoundVolumeLabel")
+
+			if label then
+				label:setText(tr("Music volume: %d", value))
+			end
+		end
+	elseif key == "botSoundVolume" then
+		if g_sounds ~= nil then
+			g_sounds.getChannel(SoundChannels.Bot):setGain(value / 100)
+		end
 	elseif key == "backgroundFrameRate" then
 		local text = value
 		local v = value
@@ -346,17 +346,28 @@ function setOption(key, value, force)
 			v = 0
 		end
 
-		graphicsPanel:getChildById("backgroundFrameRateLabel"):setText(tr("Game framerate limit: %s", text))
 		g_app.setMaxFps(v)
-	elseif key == "floorFading" then
-		gameMapPanel:setFloorFading(value)
-		interfacePanel:getChildById("floorFadingLabel"):setText(tr("Floor fading: %s ms", value))
+
+		for _, win in pairs(subWindows) do
+			local label = win:recursiveGetChildById("backgroundFrameRateLabel")
+
+			if label then
+				label:setText(tr("Adjust framerate limit: %s", text))
+			end
+		end
 	elseif key == "crosshair" then
 		gameMapPanel:setCrosshair("")
 	elseif key == "ambientLight" then
-		graphicsPanel:getChildById("ambientLightLabel"):setText(tr("Ambient light: %s%%", value))
 		gameMapPanel:setMinimumAmbientLight(value / 100)
 		gameMapPanel:setDrawLights(value < 100)
+
+		for _, win in pairs(subWindows) do
+			local label = win:recursiveGetChildById("ambientLightLabel")
+
+			if label then
+				label:setText(tr("Ambient light: %s%%", value))
+			end
+		end
 	elseif key == "optimizationLevel" then
 		g_adaptiveRenderer.setLevel(value - 2)
 	elseif key == "displayNames" then
@@ -367,75 +378,39 @@ function setOption(key, value, force)
 		gameMapPanel:setDrawManaBar(value)
 	elseif key == "displayHealthOnTop" then
 		gameMapPanel:setDrawHealthBarsOnTop(value)
-	elseif key == "hidePlayerBars" then
-		-- Nothing
-	elseif key == "topHealtManaBar" then
-		-- Nothing
 	elseif key == "displayText" then
 		gameMapPanel:setDrawTexts(value)
-	elseif key == "dontStretchShrink" then
-		addEvent(function ()
-			modules.game_interface.updateStretchShrink()
-		end)
 	elseif key == "dash" then
-		-- Nothing
-	elseif key == "smoothWalking" then
-		if value then
-			g_game.setMaxPreWalkingSteps(2)
-		else
-			g_game.setMaxPreWalkingSteps(1)
-		end
+		g_game.setMaxPreWalkingSteps(2)
 	elseif key == "wsadWalking" then
 		if modules.game_console and modules.game_console.consoleToggleChat:isChecked() ~= value then
 			modules.game_console.consoleToggleChat:setChecked(value)
 		end
-	elseif key == "hotkeyDelay" then
-		generalPanel:getChildById("hotkeyDelayLabel"):setText(tr("Hotkey delay: %s ms", value))
-	elseif key == "walkFirstStepDelay" then
-		generalPanel:getChildById("walkFirstStepDelayLabel"):setText(tr("Walk delay after first step: %s ms", value))
-	elseif key == "walkTurnDelay" then
-		generalPanel:getChildById("walkTurnDelayLabel"):setText(tr("Walk delay after turn: %s ms", value))
-	elseif key == "walkStairsDelay" then
-		generalPanel:getChildById("walkStairsDelayLabel"):setText(tr("Walk delay after floor change: %s ms", value))
-	elseif key == "walkTeleportDelay" then
-		generalPanel:getChildById("walkTeleportDelayLabel"):setText(tr("Walk delay after teleport: %s ms", value))
-	elseif key == "walkCtrlTurnDelay" then
-		generalPanel:getChildById("walkCtrlTurnDelayLabel"):setText(tr("Walk delay after ctrl turn: %s ms", value))
 	elseif key == "antialiasing" then
 		g_app.setSmooth(value)
 	end
 
-	for _, panel in pairs(optionsTabBar:getTabsPanel()) do
-		local widget = panel:recursiveGetChildById(key)
+	for _, win in pairs(subWindows) do
+		local widget = win:recursiveGetChildById(key)
 
 		if widget then
 			if widget:getStyle().__class == "UICheckBox" then
 				widget:setChecked(value)
-
-				break
-			end
-
-			if widget:getStyle().__class == "UIScrollBar" then
+			elseif widget:getStyle().__class == "UIScrollBar" then
 				widget:setValue(value)
+			elseif widget:getStyle().__class == "UIComboBox" then
+				if type(value) == "string" then
+					widget:setCurrentOption(value, true)
+				else
+					if value == nil or value < 1 then
+						value = 1
+					end
 
-				break
+					if widget.currentIndex ~= value then
+						widget:setCurrentIndex(value, true)
+					end
+				end
 			end
-
-			if widget:getStyle().__class == "UIComboBox" and type(value) == "string" then
-				widget:setCurrentOption(value, true)
-
-				break
-			end
-
-			if value == nil or value < 1 then
-				value = 1
-			end
-
-			if widget.currentIndex ~= value then
-				widget:setCurrentIndex(value, true)
-			end
-
-			break
 		end
 	end
 
@@ -450,24 +425,14 @@ function setOption(key, value, force)
 	if key == "classicView" or key == "rightPanels" or key == "leftPanels" or key == "cacheMap" then
 		modules.game_interface.refreshViewMode()
 	elseif key:find("actionbar") then
-		modules.game_actionbar.show()
-	end
-
-	if key == "topBar" then
-		-- Nothing
+		if modules.game_actionbar then
+			modules.game_actionbar.refresh()
+		end
 	end
 end
 
 function getOption(key)
 	return options[key]
-end
-
-function addTab(name, panel, icon)
-	optionsTabBar:addTab(name, panel, icon)
-end
-
-function addButton(name, func, icon)
-	optionsTabBar:addButton(name, func, icon)
 end
 
 function online()
@@ -480,13 +445,16 @@ function offline()
 end
 
 function setLightOptionsVisibility(value)
-	graphicsPanel:getChildById("ambientLightLabel"):setEnabled(value)
-	graphicsPanel:getChildById("ambientLight"):setEnabled(value)
-	interfacePanel:getChildById("floorFading"):setEnabled(value)
-	interfacePanel:getChildById("floorFadingLabel"):setEnabled(value)
-	interfacePanel:getChildById("floorFadingLabel2"):setEnabled(value)
-end
+	if subWindows.graphics then
+		local lbl = subWindows.graphics:recursiveGetChildById("ambientLightLabel")
+		local pnl = subWindows.graphics:recursiveGetChildById("ambientLight")
 
-function onHelpChange(currentOption, currentIndex)
-	helpDescription:setText(helpCategories[currentIndex].text)
+		if lbl then
+			lbl:setEnabled(value)
+		end
+
+		if pnl then
+			pnl:setEnabled(value)
+		end
+	end
 end

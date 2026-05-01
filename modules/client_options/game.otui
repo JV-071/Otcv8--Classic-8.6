@@ -1,30 +1,52 @@
 OptionPanel
-  OptionCheckBox
-    id: classicControl
-    !text: tr('Classic control')
 
-    $mobile:
-      visible: false
+  FlatPanel
+    height: 22
 
-  OptionCheckBox
-    id: autoChaseOverride
-    !text: tr('Allow auto chase override')
+    OptionCheckBox
+      id: classicControl
+      !text: tr('Tibia Classic Control')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  OptionCheckBox
-    id: displayText
-    !text: tr('Display text messages')
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-  OptionCheckBox
-    id: wsadWalking
-    !text: tr('Enable WSAD walking')
-    !tooltip: tr('Disable chat and allow walk using WSAD keys')
-    $mobile:
-      visible: false
+    OptionCheckBox
+      id: autoChaseOverride
+      !text: tr('Auto Chase Off')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  OptionCheckBox
-    id: smoothWalking
-    !text: tr('Enable smooth walking')
-    !tooltip: tr('Enables smooth walking with keyboard')
+  FlatPanel
+    height: 22
+    margin-top: 8
+
+    OptionCheckBox
+      id: displayText
+      !text: tr('Display text messages')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
+
+  FlatPanel
+    height: 22
+    margin-top: 8
+
+    OptionCheckBox
+      id: wsadWalking
+      !text: tr('Enable WSAD walking')
+      !tooltip: tr('Disable chat and allow walk using WSAD keys')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5 
 
   OptionCheckBox
     id: dash
@@ -32,119 +54,67 @@ OptionPanel
     !tooltip: tr('Allows to execute next move without server confirmation of previous one')
     visible: false
 
-  OptionCheckBox
-    id: moveFullStack
-    !text: tr('Move full stacks by default')
-    !tooltip: tr('Move stacks of items by default and hold ctrl to open window.')
-    visible: true
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-  OptionCheckBox
-    id: smartWalk
-    !text: tr('Enable smart walking')
-    !tooltip: tr('Will detect when to use diagonal step based on the\nkeys you are pressing')
+    OptionCheckBox
+      id: smartWalk
+      !text: tr('Enable smart walking')
+      !tooltip: tr('Will detect when to use diagonal step based on the\nkeys you are pressing')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  Label
-    id: hotkeyDelayLabel
-    margin-top: 10
-    !tooltip: tr('Give you some time to make a turn while walking if you press many keys simultaneously')
-    @onSetup: |
-      local value = modules.client_options.getOption('hotkeyDelay')
-      self:setText(tr('Hotkey delay: %s ms', value))
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-  OptionScrollbar
-    id: hotkeyDelay
-    margin-top: 3
-    minimum: 5
-    maximum: 50
+    OptionCheckBox
+      id: displayNames
+      !text: tr('Display creature names')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  Label
-    id: walkFirstStepDelayLabel
-    margin-top: 10
-    @onSetup: |
-      local value = modules.client_options.getOption('walkFirstStepDelay')
-      self:setText(tr('Walk delay after first step: %s ms', value))
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-    $mobile:
-      visible: false
+    OptionCheckBox
+      id: displayHealth
+      !text: tr('Display creature health bars')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  OptionScrollbar
-    id: walkFirstStepDelay
-    margin-top: 3
-    minimum: 50
-    maximum: 300
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-    $mobile:
-      visible: false
+    OptionCheckBox
+      id: displayHealthOnTop
+      !text: tr('Display creature health bars above texts')
+      !tooltip: tr('Display creature health bars above texts')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
 
-  Label
-    id: walkTurnDelayLabel
-    margin-top: 10
-    @onSetup: |
-      local value = modules.client_options.getOption('walkTurnDelay')
-      self:setText(tr('Walk delay after turn: %s ms', value))
+  FlatPanel
+    height: 22
+    margin-top: 8
 
-    $mobile:
-      visible: false
-
-  OptionScrollbar
-    id: walkTurnDelay
-    margin-top: 3
-    minimum: 0
-    maximum: 300
-
-    $mobile:
-      visible: false
-
-  Label
-    id: walkCtrlTurnDelayLabel
-    margin-top: 10
-    $mobile:
-      visible: false
-    @onSetup: |
-      local value = modules.client_options.getOption('walkTurnDelay')
-      self:setText(tr('Walk delay after ctrl turn: %s ms', value))
-
-  OptionScrollbar
-    id: walkCtrlTurnDelay
-    margin-top: 3
-    minimum: 0
-    maximum: 300    
-    $mobile:
-      visible: false
-
-  Label
-    id: walkStairsDelayLabel
-    margin-top: 10
-    @onSetup: |
-      local value = modules.client_options.getOption('walkStairsDelay')
-      self:setText(tr('Walk delay after floor change: %s ms', value))
-    $mobile:
-      visible: false
-
-  OptionScrollbar
-    id: walkStairsDelay
-    margin-top: 3
-    minimum: 0
-    maximum: 300
-    $mobile:
-      visible: false
-
-  Label
-    id: walkTeleportDelayLabel
-    margin-top: 10
-    @onSetup: |
-      local value = modules.client_options.getOption('walkTeleportDelay')
-      self:setText(tr('Walk delay after teleport: %s ms', value))
-    $mobile:
-      visible: false
-
-  OptionScrollbar
-    id: walkTeleportDelay
-    margin-top: 3
-    minimum: 0
-    maximum: 300
-    $mobile:
-      visible: false
+    OptionCheckBox
+      id: displayMana
+      !text: tr('Show player mana bar')
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 5
       
   Panel
     height: 30
@@ -155,4 +125,5 @@ OptionPanel
       !text: tr('Change language')
       @onClick: modules.client_locales.createWindow()
       anchors.left: parent.left
+      anchors.right: parent.right
       anchors.top: parent.top

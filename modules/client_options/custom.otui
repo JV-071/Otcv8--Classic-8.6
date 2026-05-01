@@ -18,6 +18,8 @@ OptionPanel
       self:addOption("9")
       self:addOption("10")
 
+  Label
+
   OptionCheckBox
     id: topBar
     !text: tr('Show customizable top status bar')
