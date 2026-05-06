@@ -284,7 +284,7 @@ function toggleInventoryMinimize(state)
     -- Utility buttons
     local storeButton = controlsPanel:getChildById("storeButton")
     local stopButton = controlsPanel:getChildById("stopButton")
-    local purseButton = controlsPanel:getChildById("purseButton")
+    local purseButton = slotsPanel:getChildById("purseButton")
     local optionsButton = controlsPanel:getChildById("optionsButton")
     local questsButton = controlsPanel:getChildById("questsButton")
     local botButton = controlsPanel:getChildById("botButton")
@@ -300,13 +300,17 @@ function toggleInventoryMinimize(state)
 
     if minimized then
         slotsPanel:hide()
-        storeButton:hide()
+        if storeButton then
+            storeButton:hide()
+        end
         stopButton:hide()
-        purseButton:hide()
         optionsButton:hide()
         questsButton:hide()
         botButton:hide()
         mountButton:hide()
+        if purseButton then
+            purseButton:hide()
+        end
 
         inventoryWindow:setHeight(62)
         inventoryWindow:setWidth(155)
@@ -373,13 +377,17 @@ function toggleInventoryMinimize(state)
         minimizeButton:setImageClip("14 0 14 14") -- "+" icon
     else
         slotsPanel:show()
-        storeButton:show()
+        if storeButton then
+            storeButton:show()
+        end
         stopButton:show()
-        purseButton:show()
         optionsButton:show()
         questsButton:show()
         botButton:show()
         mountButton:show()
+        if purseButton then
+            purseButton:show()
+        end
 
         inventoryWindow:setHeight(172)
         inventoryWindow:setWidth(170)
@@ -416,7 +424,7 @@ function toggleInventoryMinimize(state)
 
         offensive:addAnchor(AnchorTop, 'parent', AnchorTop)
         offensive:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-        offensive:setMarginTop(18)
+        offensive:setMarginTop(5)
         offensive:setMarginLeft(8)
 
         balanced:addAnchor(AnchorTop, 'fightOffensiveBox', AnchorBottom)
@@ -463,19 +471,15 @@ function toggleInventoryMinimize(state)
         stopButton:addAnchor(AnchorRight, 'safeFightBox', AnchorRight)
         stopButton:setMarginTop(5)
 
-        optionsButton:addAnchor(AnchorTop, 'stopButton', AnchorBottom)
-        optionsButton:addAnchor(AnchorLeft, 'stopButton', AnchorLeft)
-        optionsButton:addAnchor(AnchorRight, 'stopButton', AnchorRight)
-        optionsButton:setMarginTop(3)
-
-        questsButton:addAnchor(AnchorTop, 'optionsButton', AnchorBottom)
-        questsButton:addAnchor(AnchorLeft, 'optionsButton', AnchorLeft)
-        questsButton:addAnchor(AnchorRight, 'optionsButton', AnchorRight)
+        questsButton:addAnchor(AnchorTop, 'stopButton', AnchorBottom)
+        questsButton:addAnchor(AnchorLeft, 'stopButton', AnchorLeft)
+        questsButton:addAnchor(AnchorRight, 'stopButton', AnchorRight)
         questsButton:setMarginTop(3)
 
-        purseButton:addAnchor(AnchorTop, 'questsButton', AnchorBottom)
-        purseButton:addAnchor(AnchorLeft, 'questsButton', AnchorLeft)
-        purseButton:setMarginTop(3)
+        optionsButton:addAnchor(AnchorTop, 'questsButton', AnchorBottom)
+        optionsButton:addAnchor(AnchorLeft, 'questsButton', AnchorLeft)
+        optionsButton:addAnchor(AnchorRight, 'questsButton', AnchorRight)
+        optionsButton:setMarginTop(3)
 
         minimizeButton:setImageClip("0 0 14 14") -- "-" icon
     end

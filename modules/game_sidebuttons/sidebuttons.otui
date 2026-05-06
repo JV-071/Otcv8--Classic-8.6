@@ -1,22 +1,39 @@
 NonClosableMiniWindow
-  height: 50
+  height: 72
   id: sideButtonsWindow
   @onClose: modules.game_inventory.onMiniWindowClose()
   &save: true
   &autoOpen: 3
 
   NonClosableMiniWindowContents
+    UIWidget
+      id: storeButton
+      image-source: buttons/store
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-top: 4
+      margin-left: 5
+      size: 108 20
+      image-clip: 0 0 108 20
+      @onClick: if modules.game_store then modules.game_store.toggle() end
+
+      $pressed:
+        image-clip: 0 20 108 20
+
+      $checked:
+        image-clip: 0 20 108 20
+
     InventoryButton
       id: skillsButton
       !text: tr('Skills')
       anchors.left: parent.left
-      anchors.top: parent.top
+      anchors.top: storeButton.bottom
       margin-top: 4
       margin-left: 5
       width: 34
       height: 20
       @onClick: modules.game_skills.toggle()
-    
+
     InventoryButton
       id: battleButton
       !text: tr('Battle')

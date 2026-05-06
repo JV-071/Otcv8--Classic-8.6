@@ -11,7 +11,6 @@ local selectedImbue
 local imbueItems = {}
 local protection = false
 local clearConfirmWindow
-local imbueConfirmWindow
 
 function init()
   connect(g_game, {
@@ -32,19 +31,45 @@ function init()
   groupsCombo.onOptionChange = function(widget)
     imbueLevelsCombo:clear()
     if itemImbuements ~= nil then
-      local selectedGroup = groupsCombo:getCurrentOption().text
+      local selectedOption = groupsCombo:getCurrentOption()
+      if not selectedOption then
+        selectedImbue = nil
+        emptyImbue.imbue:setEnabled(false)
+        emptyImbue.imbue:setImageSource("/images/game/imbuing/imbue_empty")
+        emptyImbue.description:setText("")
+        return
+      end
+
+      local selectedGroup = selectedOption.text
       for _,imbuement in ipairs(itemImbuements) do
         if imbuement["group"] == selectedGroup then
           emptyImbue.imbuement:addOption(imbuement["name"])          
         end
       end
-      imbueLevelsCombo.onOptionChange(imbueLevelsCombo) -- update options
+      if imbueLevelsCombo:getCurrentOption() then
+        imbueLevelsCombo.onOptionChange(imbueLevelsCombo) -- update options
+      end
     end
   end
 
   imbueLevelsCombo.onOptionChange = function(widget)
     setProtection(false)
-    local selectedGroup = groupsCombo:getCurrentOption().text
+    selectedImbue = nil
+    emptyImbue.imbue:setEnabled(false)
+    emptyImbue.imbue:setImageSource("/images/game/imbuing/imbue_empty")
+    emptyImbue.description:setText("")
+    for i=1,3 do
+      emptyImbue.requiredItems:getChildByIndex(i).count:setText("")
+      emptyImbue.requiredItems:getChildByIndex(i).item:setItemId(0)
+      emptyImbue.requiredItems:getChildByIndex(i).item:setTooltip("")
+    end
+
+    local selectedOption = groupsCombo:getCurrentOption()
+    if not selectedOption then
+      return
+    end
+
+    local selectedGroup = selectedOption.text
     for _,imbuement in ipairs(itemImbuements) do
       if imbuement["group"] == selectedGroup then
         if #imbuement["sources"] == widget.currentIndex then
@@ -109,6 +134,12 @@ function init()
 end
 
 function setProtection(value)
+  if value and not selectedImbue then
+    protection = false
+    protectionBtn:setImageClip(torect("0 0 66 66"))
+    return
+  end
+
   protection = value
   if protection then
     emptyImbue.cost:setText(selectedImbue["cost"] + selectedImbue["protectionCost"])
@@ -168,9 +199,13 @@ function selectSlot(widget, slotId, activeSlot)
 
     clearImbue.cost:setText(activeSlot[3])
     if (bankGold + inventoryGold) < activeSlot[3] then
-      emptyImbue.clear:setEnabled(false)
-      emptyImbue.clear:setImageSource("/images/game/imbuing/imbue_empty")
-      emptyImbue.cost:setColor("red")
+      clearImbue.clear:setEnabled(false)
+      clearImbue.clear:setImageSource("/images/game/imbuing/imbue_empty")
+      clearImbue.cost:setColor("red")
+    else
+      clearImbue.clear:setEnabled(true)
+      clearImbue.clear:setImageSource("/images/game/imbuing/clear")
+      clearImbue.cost:setColor("white")
     end
 
     local yesCallback = function()
@@ -199,16 +234,23 @@ function selectSlot(widget, slotId, activeSlot)
 
     clearImbue:setVisible(true)
   else
+    if not selectedImbue then
+      emptyImbue.imbue:setEnabled(false)
+      emptyImbue.imbue:setImageSource("/images/game/imbuing/imbue_empty")
+    end
+
     emptyImbue:setVisible(true)
     clearImbue:setVisible(false)
 
     local yesCallback = function()
+      if not selectedImbue then
+        return
+      end
       g_game.applyImbuement(slotId, selectedImbue["id"], protection)
       if clearConfirmWindow then
         clearConfirmWindow:destroy()
         clearConfirmWindow=nil
       end
-      widget:setText(selectedImbue["name"])
       imbuingWindow:show()
     end
     local noCallback = function()
@@ -220,6 +262,9 @@ function selectSlot(widget, slotId, activeSlot)
     end
 
     emptyImbue.imbue.onClick = function()
+      if not selectedImbue then
+        return
+      end
       imbuingWindow:hide()
       local cost = selectedImbue["cost"]
       local successRate = selectedImbue["successRate"]
@@ -243,38 +288,59 @@ function onImbuementWindow(itemId, slots, activeSlots, imbuements, needItems)
   imbueItems = table.copy(needItems)
   imbuingWindow.itemInfo.item:setItemId(itemId)
 
-  for i=1, slots do
-    local slot = imbuingWindow.itemInfo.slots:getChildByIndex(i)
-    slot.onClick = function(widget)
-      selectSlot(widget, i - 1)
-    end
-    slot:setTooltip("Use this slot to imbue your item. Depending on the item you can have up to three different imbuements.")
-    slot:setEnabled(true)
-
-    if slot:getId() == "slot0" then
-      selectSlot(slot, i - 1)
-    end
-  end
-
-  for i, slot in pairs(activeSlots) do
-    local activeSlotBtn = imbuingWindow.itemInfo.slots:getChildById("slot" .. i)
-    activeSlotBtn.onClick = function(widget)
-      selectSlot(widget, i, slot)
-    end
-    if activeSlotBtn:getId() == "slot0" then
-      selectSlot(activeSlotBtn, i, slot)
-    end
-  end
-
   if imbuements ~= nil then
     groupsCombo:clear()
     imbueLevelsCombo:clear()
     itemImbuements = table.copy(imbuements)
+    selectedImbue = nil
     for _,imbuement in ipairs(itemImbuements) do
       if not groupsCombo:isOption(imbuement["group"]) then
         groupsCombo:addOption(imbuement["group"])
       end
     end
+    if groupsCombo:getCurrentOption() then
+      groupsCombo.onOptionChange(groupsCombo)
+    end
+  end
+
+  local selectedSlotWidget = nil
+  local selectedSlotId = nil
+  local selectedActiveSlot = nil
+
+  for i=1, slots do
+    local slot = imbuingWindow.itemInfo.slots:getChildByIndex(i)
+    local slotId = i - 1
+    slot.onClick = function(widget)
+      selectSlot(widget, slotId)
+    end
+    slot:setTooltip("Use this slot to imbue your item. Depending on the item you can have up to three different imbuements.")
+    slot:setEnabled(true)
+
+    if not selectedSlotWidget then
+      selectedSlotWidget = slot
+      selectedSlotId = slotId
+    end
+  end
+
+  for i, slot in pairs(activeSlots or {}) do
+    local activeSlotBtn = imbuingWindow.itemInfo.slots:getChildById("slot" .. i)
+    if activeSlotBtn then
+      local slotId = i
+      local activeSlot = slot
+      activeSlotBtn.onClick = function(widget)
+        selectSlot(widget, slotId, activeSlot)
+      end
+      activeSlotBtn:setText(activeSlot[1]["name"])
+      if i == 0 or not selectedActiveSlot then
+        selectedSlotWidget = activeSlotBtn
+        selectedSlotId = slotId
+        selectedActiveSlot = activeSlot
+      end
+    end
+  end
+
+  if selectedSlotWidget then
+    selectSlot(selectedSlotWidget, selectedSlotId, selectedActiveSlot)
   end
   show()
 end
@@ -292,6 +358,7 @@ end
 
 function onCloseImbuementWindow()
   resetSlots()
+  imbuingWindow:hide()
 end
 
 function hide()
