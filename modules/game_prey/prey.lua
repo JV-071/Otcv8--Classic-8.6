@@ -316,7 +316,13 @@ local function renderAllSlots()
 	end
 end
 
-function onPreyMessage(protocol, msg)
+local function discardUnreadPreyMessage(msg)
+	while not msg:eof() do
+		msg:getU8()
+	end
+end
+
+local function parsePreyMessage(msg)
 	local subtype = msg:getU8()
 	if subtype == PREY_SEND_ERROR then
 		return showMessage(tr("Prey Error"), msg:getString())
@@ -333,6 +339,14 @@ function onPreyMessage(protocol, msg)
 		local slot = msg:getU8()
 		preySlots[slot] = parseSlot(msg)
 		renderPreySlot(slot)
+	end
+end
+
+function onPreyMessage(protocol, msg)
+	local ok, err = pcall(parsePreyMessage, msg)
+	if not ok then
+		g_logger.error("Failed to parse prey message: " .. tostring(err))
+		discardUnreadPreyMessage(msg)
 	end
 end
 

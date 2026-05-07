@@ -14,8 +14,8 @@ ShopCategory < FlatPanel
     icon-offset: 6 0
     @onClick: modules.game_store.select(self)
     $checked:
-      image-clip: 0 46 22 23
-      text-offset: 1 1
+      image-clip: 0 0 43 20
+      text-offset: 0 1
     
   Label
     id: name
@@ -59,8 +59,8 @@ ShopSubCategory < UIWidget
     icon-offset: 6 0
     @onClick: modules.game_store.select(self)
     $checked:
-      image-clip: 0 46 22 23
-      text-offset: 1 1
+      image-clip: 0 0 43 20
+      text-offset: 0 1
     
   Label
     id: name

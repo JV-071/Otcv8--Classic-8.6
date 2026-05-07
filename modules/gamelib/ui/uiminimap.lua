@@ -61,7 +61,14 @@ function UIMinimap:load()
         self:addFlag(flag.position, flag.icon, flag.description)
       end
     end
-    self:setZoom(settings.zoom)
+    local ok = pcall(function()
+      self:setZoom(tonumber(settings.zoom) or 0)
+    end)
+    if not ok then
+      pcall(function()
+        self:setZoom(0)
+      end)
+    end
   end
 end
 

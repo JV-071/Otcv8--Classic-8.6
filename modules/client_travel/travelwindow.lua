@@ -41,7 +41,9 @@ function init()
 	connect(LocalPlayer, {
 		onPositionChange = closeTravelWindow
 	})
-	ProtocolGame.registerOpcode(GameServerOpcodes.GameServerTravelWindow, parseTravelWindow)
+	if GameServerOpcodes.GameServerTravelWindow then
+		ProtocolGame.registerOpcode(GameServerOpcodes.GameServerTravelWindow, parseTravelWindow)
+	end
 end
 
 function terminate()
@@ -52,7 +54,9 @@ function terminate()
 	disconnect(g_game, {
 		onGameEnd = offline
 	})
-	ProtocolGame.unregisterOpcode(GameServerOpcodes.GameServerTravelWindow)
+	if GameServerOpcodes.GameServerTravelWindow then
+		ProtocolGame.unregisterOpcode(GameServerOpcodes.GameServerTravelWindow)
+	end
 end
 
 function offline()
