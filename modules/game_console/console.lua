@@ -2040,7 +2040,7 @@ function online()
 	if g_game.getClientVersion() < 862 then
 		local gameRootPanel = modules.game_interface.getRootPanel()
 
-		g_keyboard.bindKeyDown("Ctrl+R", openReportWindow, gameRootPanel)
+		g_keyboard.bindKeyDown("Ctrl+Z", openReportWindow, gameRootPanel)
 	end
 
 	local lastChannelsOpen = g_settings.getNode("lastChannelsOpen")
@@ -2072,7 +2072,7 @@ function offline()
 	if g_game.getClientVersion() < 862 then
 		local gameRootPanel = modules.game_interface.getRootPanel()
 
-		g_keyboard.unbindKeyDown("Ctrl+R", gameRootPanel)
+		g_keyboard.unbindKeyDown("Ctrl+Z", gameRootPanel)
 	end
 
 	clear()

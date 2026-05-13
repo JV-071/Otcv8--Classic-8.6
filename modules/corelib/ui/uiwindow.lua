@@ -10,15 +10,15 @@ function UIWindow.create()
 	return window
 end
 
-function UIWindow:onEscape()
-	self:hide()
-end
-
 function UIWindow:onKeyDown(keyCode, keyboardModifiers)
 	if keyboardModifiers == KeyboardNoModifier then
 		if keyCode == KeyEnter then
 			signalcall(self.onEnter, self)
 		elseif keyCode == KeyEscape then
+			if g_game and g_game.isOnline and g_game.isOnline() then
+				return false
+			end
+
 			signalcall(self.onEscape, self)
 		end
 	end
