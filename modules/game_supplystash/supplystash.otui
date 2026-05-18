@@ -26,6 +26,19 @@ StashItem < UIItem
   size: 32 32
   draggable: false
   @onDrop: function(self, widget, mousePos) return blockItemDrop(self, widget, mousePos) end
+
+  UIWidget
+    id: tier
+    size: 9 8
+    image-source: /images/game/items/tiers-strip
+    image-clip: 0 0 9 8
+    image-size: 9 8
+    anchors.top: parent.top
+    anchors.right: parent.right
+    phantom: true
+    focusable: false
+    visible: false
+    image-smooth: true
   
   Label
     id: count
@@ -82,8 +95,11 @@ SupplyStashWindow
 
   Label
     id: freeSlots
+    size: 250 28
     anchors.bottom: parent.bottom
     anchors.left: parent.left
+    text-align: left
+    text-wrap: true
 
   UIWidget
     id: itemsContainer

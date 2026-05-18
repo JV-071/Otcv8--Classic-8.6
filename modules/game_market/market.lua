@@ -99,7 +99,7 @@ local function isItemValid(item, category, searchFilter)
 		end
 	end
 
-	if filterDepot and Market.getDepotCount(item.marketData.tradeAs) <= 0 then
+	if filterDepot and Market.getDepotCount(item.marketData.tradeAs, getMarketItemTier(item)) <= 0 then
 		return false
 	end
 
@@ -114,6 +114,26 @@ local function clearItems()
 	currentItems = {}
 
 	Market.refreshItemsWidget()
+end
+
+local function setDisplayItemTier(item, tier)
+	if item and item.setTier then
+		item:setTier(math.max(0, math.min(10, tonumber(tier) or 0)))
+	end
+end
+
+local function getDepotItemKey(itemId, tier)
+	return tostring(itemId) .. ":" .. tostring(math.max(0, math.min(10, tonumber(tier) or 0)))
+end
+
+local function getMarketItemTier(item)
+	if item and item.marketData and item.marketData.tier then
+		return math.max(0, math.min(10, tonumber(item.marketData.tier) or 0))
+	end
+	if item and item.displayItem and item.displayItem.getTier then
+		return math.max(0, math.min(10, tonumber(item.displayItem:getTier()) or 0))
+	end
+	return 0
 end
 
 local function clearOffers()
@@ -172,7 +192,7 @@ local function refreshTypeList()
 	offerTypeList:clearOptions()
 	offerTypeList:addOption("Buy")
 
-	if Market.isItemSelected() and Market.getDepotCount(selectedItem.item.marketData.tradeAs) > 0 then
+	if Market.isItemSelected() and Market.getDepotCount(selectedItem.item.marketData.tradeAs, getMarketItemTier(selectedItem.item)) > 0 then
 		offerTypeList:addOption("Sell")
 	end
 end
@@ -724,7 +744,8 @@ local function openAmountWindow(callback, actionType, actionText)
 	local maximum = offer:getAmount()
 
 	if actionType == MarketAction.Sell then
-		local depot = Market.getDepotCount(item:getId())
+		local tier = item.getTier and item:getTier() or 0
+		local depot = Market.getDepotCount(item:getId(), tier)
 
 		if depot < maximum then
 			maximum = depot
@@ -741,7 +762,8 @@ local function openAmountWindow(callback, actionType, actionText)
 
 	local itembox = amountWindow:getChildById("item")
 
-	itembox:setItemId(item:getId())
+	itembox:setItem(item)
+	ItemsDatabase.setTier(itembox, item)
 
 	local scrollbar = amountWindow:getChildById("amountScrollBar")
 
@@ -822,7 +844,9 @@ local function onSelectBuyOffer(table, selectedRow, previousSelectedRow)
 		if offer:isEqual(selectedRow.ref) then
 			selectedOffer[MarketAction.Sell] = offer
 
-			if Market.getDepotCount(offer:getItem():getId()) > 0 then
+			local item = offer:getItem()
+			local tier = item.getTier and item:getTier() or 0
+			if Market.getDepotCount(item:getId(), tier) > 0 then
 				sellButton:setEnabled(true)
 			else
 				sellButton:setEnabled(false)
@@ -893,7 +917,7 @@ local function onChangeOfferType(combobox, option)
 	local maximum = item.thingType:isStackable() and MarketMaxAmountStackable or MarketMaxAmount
 
 	if option == "Sell" then
-		maximum = math.min(maximum, Market.getDepotCount(item.marketData.tradeAs))
+		maximum = math.min(maximum, Market.getDepotCount(item.marketData.tradeAs, getMarketItemTier(item)))
 
 		amountEdit:setMaximum(maximum)
 	else
@@ -953,8 +977,11 @@ local function initMarketItems(items)
 		for _, entry in ipairs(items) do
 			local item = Item.create(entry.id)
 			local thingType = g_things.getThingType(entry.id, ThingCategoryItem)
+			local tier = math.max(0, math.min(10, tonumber(entry.tier) or 0))
+			local itemKey = getDepotItemKey(entry.id, tier)
 
-			if item and thingType and not marketItemNames[entry.id] then
+			if item and thingType and not itemSet[itemKey] then
+				setDisplayItemTier(item, tier)
 				local marketItem = {
 					displayItem = item,
 					thingType = thingType,
@@ -964,7 +991,8 @@ local function initMarketItems(items)
 						name = entry.name,
 						category = entry.category,
 						showAs = entry.id,
-						tradeAs = entry.id
+						tradeAs = entry.id,
+						tier = tier
 					}
 				}
 
@@ -972,6 +1000,7 @@ local function initMarketItems(items)
 					table.insert(marketItems[entry.category], marketItem)
 
 					marketItemNames[entry.id] = entry.name
+					itemSet[itemKey] = true
 				end
 			end
 		end
@@ -1316,11 +1345,14 @@ function Market.isOfferSelected(type)
 	return selectedOffer[type] and not selectedOffer[type]:isNull()
 end
 
-function Market.getDepotCount(itemId)
+function Market.getDepotCount(itemId, tier)
 	if not information.depotItems then
 		return 0
 	end
 
+	if tier ~= nil then
+		return information.depotItems[getDepotItemKey(itemId, tier)] or 0
+	end
 	return information.depotItems[itemId] or 0
 end
 
@@ -1413,18 +1445,21 @@ function Market.refreshItemsWidget(selectItem)
 		local itemBox = g_ui.createWidget("MarketItemBox", itemsPanel)
 		itemBox.onCheckChange = Market.onItemBoxChecked
 		itemBox.item = item
+		local tier = getMarketItemTier(item)
+		local itemKey = getDepotItemKey(item.marketData.tradeAs, tier)
 
-		if selectItem > 0 and item.marketData.tradeAs == selectItem then
+		if (type(selectItem) == "number" and selectItem > 0 and item.marketData.tradeAs == selectItem) or selectItem == itemKey then
 			select = itemBox
 			selectItem = 0
 		end
 
 		local itemWidget = itemBox:getChildById("item")
+		setDisplayItemTier(item.displayItem, tier)
 
 		itemWidget:setItem(item.displayItem)
 		ItemsDatabase.setTier(itemWidget, item.displayItem)
 
-		local amount = Market.getDepotCount(item.marketData.tradeAs)
+		local amount = Market.getDepotCount(item.marketData.tradeAs, tier)
 
 		if amount > 0 then
 			itemWidget:setText(comma_value(amount))
@@ -1519,6 +1554,7 @@ function Market.createNewOffer()
 	end
 
 	local spriteId = selectedItem.item.marketData.tradeAs
+	local tier = getMarketItemTier(selectedItem.item)
 	local piecePrice = piecePriceEdit:getValue()
 	local amount = amountEdit:getValue()
 	local anonymous = anonymous:isChecked() and 1 or 0
@@ -1533,7 +1569,7 @@ function Market.createNewOffer()
 			errorMsg = errorMsg .. "Not enough balance to create this offer.\n"
 		end
 
-		if Market.getDepotCount(spriteId) < amount then
+		if Market.getDepotCount(spriteId, tier) < amount then
 			errorMsg = errorMsg .. "Not enough items in your depot to create this offer.\n"
 		end
 	end
@@ -1571,7 +1607,7 @@ function Market.createNewOffer()
 		return
 	end
 
-	MarketProtocol.sendMarketCreateOffer(type, spriteId, amount, piecePrice, anonymous)
+	MarketProtocol.sendMarketCreateOffer(type, spriteId, amount, piecePrice, anonymous, tier)
 
 	lastCreatedOffer = os.time()
 
@@ -1591,7 +1627,7 @@ function Market.onItemBoxChecked(widget)
 	end
 end
 
-function Market.onMarketEnter(depotItems, offers, balance, vocation, items)
+function Market.onMarketEnter(depotItems, offers, balance, vocation, items, depotItemTiers)
 	if not loaded or items and #items > 0 then
 		initMarketItems(items)
 
@@ -1617,17 +1653,20 @@ function Market.onMarketEnter(depotItems, offers, balance, vocation, items)
 	end
 
 	information.depotItems = depotItems
+	information.depotItemTiers = depotItemTiers or {}
 
 	for i = 1, #marketItems[MarketCategory.TibiaCoins] do
 		local item = marketItems[MarketCategory.TibiaCoins][i].displayItem
 		depotItems[item:getId()] = tibiaCoins
+		depotItems[getDepotItemKey(item:getId(), 0)] = tibiaCoins
 	end
 
 	if Market.isItemSelected() then
 		local spriteId = selectedItem.item.marketData.tradeAs
+		local selectedKey = getDepotItemKey(spriteId, getMarketItemTier(selectedItem.item))
 
 		MarketProtocol.silent(true)
-		Market.refreshItemsWidget(spriteId)
+		Market.refreshItemsWidget(selectedKey)
 		MarketProtocol.silent(false)
 	else
 		Market.refreshItemsWidget()
@@ -1668,5 +1707,6 @@ function Market.onCoinBalance(coins, transferableCoins)
 	for i = 1, #marketItems[MarketCategory.TibiaCoins] do
 		local item = marketItems[MarketCategory.TibiaCoins][i].displayItem
 		information.depotItems[item:getId()] = tibiaCoins
+		information.depotItems[getDepotItemKey(item:getId(), 0)] = tibiaCoins
 	end
 end

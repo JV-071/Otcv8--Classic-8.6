@@ -77,14 +77,14 @@ local function debugLog(message)
 	return
 end
 
-local function sendSupplyRequest(action, itemId, count)
+local function sendSupplyRequest(action, itemId, count, tier)
 	local protocolGame = g_game.getProtocolGame()
 	if not protocolGame then
 		debugLog("sendSupplyRequest aborted: protocolGame is nil (action=" .. tostring(action) .. ")")
 		return
 	end
 
-	debugLog("sendSupplyRequest action=" .. tostring(action) .. ", itemId=" .. tostring(itemId) .. ", count=" .. tostring(count))
+	debugLog("sendSupplyRequest action=" .. tostring(action) .. ", itemId=" .. tostring(itemId) .. ", count=" .. tostring(count) .. ", tier=" .. tostring(tier))
 
 	local msg = OutputMessage.create()
 	msg:addU8(OPCODE_SUPPLY_STASH_REQUEST)
@@ -96,6 +96,7 @@ local function sendSupplyRequest(action, itemId, count)
 
 		msg:addU16(itemId)
 		msg:addU32(count)
+		msg:addU8(math.max(0, math.min(10, tonumber(tier) or 0)))
 	end
 	protocolGame:send(msg)
 	debugLog("packet sent with opcode=" .. tostring(OPCODE_SUPPLY_STASH_REQUEST))
@@ -123,7 +124,7 @@ local isMouseOverSupplyStash
 
 local function showStashDropBlockedMessage()
 	if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
-		modules.game_textmessage.displayFailureMessage("Put items inside Depot Locker boxes 1 to 15, then use Stow All.")
+		modules.game_textmessage.displayFailureMessage("Put items in your backpack or Depot Locker boxes 1 to 15, then use Stow All.")
 	end
 	return true
 end
@@ -266,7 +267,8 @@ local function registerProtocol()
             for i = 1, count do
 				table.insert(itemData, {
 					itemId = msg:getU16(),
-					amount = msg:getU32()
+					amount = msg:getU32(),
+					tier = msg:getU8()
 				})
             end
 
@@ -409,6 +411,11 @@ end
 function stowAll()
 	debugLog("stowAll clicked")
 	sendSupplyRequest(ACTION_STOW_ALL)
+	scheduleEvent(function()
+		if window and window:isVisible() then
+			requestOpen()
+		end
+	end, 300)
 end
 
 function emptyItemList()
@@ -597,7 +604,7 @@ local function itemMatchesSearch(itemId, name)
 	return name:lower():find(text, 1, true) ~= nil or tostring(itemId):find(text, 1, true) ~= nil
 end
 
-local function openWithdrawWindow(itemId, amount)
+local function openWithdrawWindow(itemId, amount, tier)
 	hideWindow()
 	withdrawWindow:show()
 	withdrawWindow:raise()
@@ -605,7 +612,13 @@ local function openWithdrawWindow(itemId, amount)
 	withdrawWindow:unlock()
 	modules.game_interface.getRootPanel():focus()
 
-	withdrawWindow.item:setItemId(itemId)
+	tier = math.max(0, math.min(10, tonumber(tier) or 0))
+	local displayItem = Item.create(itemId)
+	if displayItem and tier > 0 and displayItem.setTier then
+		displayItem:setTier(tier)
+	end
+	withdrawWindow.item:setItem(displayItem)
+	ItemsDatabase.setTier(withdrawWindow.item, displayItem)
 	withdrawWindow.count:setText(1)
 	withdrawWindow.countScrollBar:setMinimum(1)
 	withdrawWindow.countScrollBar:setMaximum(amount)
@@ -623,7 +636,7 @@ local function openWithdrawWindow(itemId, amount)
 	local okButton = withdrawWindow:recursiveGetChildById('buttonOk')
 	okButton.onClick = function(self)
 		local count = tonumber(withdrawWindow:recursiveGetChildById('count'):getText()) or 0
-		sendSupplyRequest(ACTION_WITHDRAW, itemId, count)
+		sendSupplyRequest(ACTION_WITHDRAW, itemId, count, tier)
 		withdrawHide()
 		modules.game_interface.getRootPanel():focus()
 	end
@@ -639,13 +652,19 @@ function refreshItemList()
 		local rowData = currentItemData[i]
 		local itemId = rowData.itemId or rowData[1]
 		local amount = rowData.amount or rowData[2]
+		local tier = rowData.tier or rowData[3] or 0
 		local name = getItemDisplayName(itemId, rowData)
 		if itemMatchesCategory(itemId, rowData) and itemMatchesSearch(itemId, name) then
 			local row = g_ui.createWidget('StashItem', supplyItems)
 			row.index = i
 			row:setId("stashItem" .. i)
 			row.categoryId = i
-			row:setItemId(itemId)
+			local displayItem = Item.create(itemId)
+			if displayItem and tier > 0 and displayItem.setTier then
+				displayItem:setTier(tier)
+			end
+			row:setItem(displayItem)
+			ItemsDatabase.setTier(row, displayItem)
 			row:setDraggable(false)
 			row:setTooltip(name)
 			markSupplyStashDropBlocked(row)
@@ -655,7 +674,7 @@ function refreshItemList()
 			markSupplyStashDropBlocked(countText)
 
 			row.onClick = function(self)
-				openWithdrawWindow(itemId, amount)
+				openWithdrawWindow(itemId, amount, tier)
 			end
 			row.onDrop = onSupplyDrop
 		end

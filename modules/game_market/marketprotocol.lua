@@ -22,6 +22,10 @@ local CustomMarketResponse = {
 
 local customMarketEnter = nil
 
+local function getDepotItemKey(itemId, tier)
+	return tostring(itemId) .. ":" .. tostring(math.max(0, math.min(10, tonumber(tier) or 0)))
+end
+
 local function send(msg)
 	if protocol and not silent then
 		protocol:send(msg)
@@ -60,15 +64,20 @@ local function readCustomMarketOffer(msg, action, var)
 	local offerId = msg:getU32()
 	local timestamp = msg:getU32()
 	local itemId = msg:getU16()
+	local tier = msg:getU8()
 	local amount = msg:getU16()
 	local price = msg:getU32()
 	local playerName = msg:getString()
 	local state = msg:getU8()
+	local item = Item.create(itemId)
+	if item and tier > 0 and item.setTier then
+		item:setTier(tier)
+	end
 
 	return MarketOffer.new({
 		timestamp,
 		offerId
-	}, action, Item.create(itemId), amount, price, playerName, state, var)
+	}, action, item, amount, price, playerName, state, var)
 end
 
 local function parseMarketEnter(protocol, msg)
@@ -115,6 +124,7 @@ local function parseMarketEnter(protocol, msg)
 		local itemId = msg:getU16()
 		local itemCount = msg:getU16()
 		depotItems[itemId] = itemCount
+		depotItems[getDepotItemKey(itemId, 0)] = itemCount
 	end
 
 	signalcall(Market.onMarketEnter, depotItems, offers, balance, vocation, items)
@@ -224,7 +234,8 @@ local function parseCustomMarketMessage(protocol, msg)
 				balance = balance,
 				offers = offers,
 				items = {},
-				depotItems = {}
+				depotItems = {},
+				depotTiers = {}
 			}
 		end
 
@@ -233,17 +244,24 @@ local function parseCustomMarketMessage(protocol, msg)
 			local category = msg:getU8()
 			local name = msg:getString()
 			local amount = msg:getU16()
+			local tier = msg:getU8()
 
 			table.insert(customMarketEnter.items, {
 				id = itemId,
 				category = category,
-				name = name
+				name = name,
+				tier = tier
 			})
-			customMarketEnter.depotItems[itemId] = amount
+			customMarketEnter.depotItems[getDepotItemKey(itemId, tier)] = amount
+			customMarketEnter.depotItems[itemId] = (customMarketEnter.depotItems[itemId] or 0) + amount
+			customMarketEnter.depotTiers[getDepotItemKey(itemId, tier)] = tier
+			if tier > (customMarketEnter.depotTiers[itemId] or 0) then
+				customMarketEnter.depotTiers[itemId] = tier
+			end
 		end
 
 		if lastChunk then
-			signalcall(Market.onMarketEnter, customMarketEnter.depotItems, customMarketEnter.offers, customMarketEnter.balance, -1, customMarketEnter.items)
+			signalcall(Market.onMarketEnter, customMarketEnter.depotItems, customMarketEnter.offers, customMarketEnter.balance, -1, customMarketEnter.items, customMarketEnter.depotTiers)
 			customMarketEnter = nil
 		end
 
@@ -387,7 +405,7 @@ function MarketProtocol.sendMarketBrowseMyHistory()
 	MarketProtocol.sendMarketBrowse(MarketRequest.MyHistory)
 end
 
-function MarketProtocol.sendMarketCreateOffer(type, spriteId, amount, price, anonymous)
+function MarketProtocol.sendMarketCreateOffer(type, spriteId, amount, price, anonymous, tier)
 	local msg = OutputMessage.create()
 
 	msg:addU8(CustomMarketOpcode.Create)
@@ -396,6 +414,7 @@ function MarketProtocol.sendMarketCreateOffer(type, spriteId, amount, price, ano
 	msg:addU16(amount)
 	msg:addU32(price)
 	msg:addU8(anonymous)
+	msg:addU8(math.max(0, math.min(10, tonumber(tier) or 0)))
 	send(msg)
 end
 
